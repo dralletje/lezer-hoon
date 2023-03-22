@@ -1,0 +1,818 @@
+@dialects { dojo }
+
+@precedence {
+  // I put this here so I can easily test `@cut` because
+  // I still hope to find a usecase for it somewhere.
+  cut @cut
+
+  value_over_operator
+  
+  idk
+  rune
+
+  path
+  
+  dotis
+  
+  ket @left
+  tisgal @left
+  kethep @left
+  kettis @left
+  kettar @left
+  backtick
+  
+  tank
+
+  // Huh
+  rename
+  limb @left
+  skip
+  gap
+  lark
+  wutzap
+}
+
+@top File { gap? statement (gap statement)* gap?}
+
+statement {
+  hoon |
+  
+  // Import runes (`/+`, `/-`, and `/?`) can only happen on top level 
+  fas_statements |
+
+  // Things only available in top level (Dojo only?)
+  PlusCommand { PlusName (ace+ hoon)* } |
+  ColonBarCommand { ColonBarName (ace+ hoon)* } |
+  BarCommand { BarName (ace+ hoon)* } |
+  DojoAssignCommand { DojoAssignName ace+ hoon }
+}
+
+hoon {
+  // runes |
+  runes_by_n |
+  
+  atom |
+  Mold |
+  Aura |
+  irregular |
+  wing2
+}
+
+runes {
+  bar_runes |
+  buc_runes |
+  cen_runes |
+  col_runes |
+  dot_runes |
+  ket_runes |
+  mic_runes |
+  sig_runes |
+  tis_runes |
+  zap_runes |
+  wut_runes
+}
+
+
+// https://developers.urbit.org/reference/hoon/irregular#trivial-molds
+Mold {
+  "*" !value_over_operator | // Noun
+  "@" | // Atom
+  "^" | // Cell
+  "?" | // Loobean
+  "~" // Null
+}
+
+// Needs more literals still
+// https://developers.urbit.org/guides/core/hoon-school/E-types
+atom {
+  Number |
+  SignedNumber |
+  Cord |
+  Tape |
+  Term |
+  Phonemic |
+  Knot |
+  Path |
+  True { "&" } |
+  False { "|" } |
+  // TODO Names?
+  "%.y" |
+  "%.n" |
+  "%.inf"
+
+  // _In theory_ "~" is also a value (where I now have it under Molds)
+  // but because I parse basically everything as a full hoon, I'm fine with
+  // this 🙃
+  // "~" | // Null
+}
+Path {
+  (
+    !path
+    "/"
+    (
+      Name { name } |
+      "[" hoon "]" |
+      Cencol { "(" list<hoon> ")" }
+    )
+  )+
+}
+
+
+// Special ast types that are often used instead of `hoon`,
+// but they overlap A LOT with `hoon`. (or I don't know what they are)
+// A lot of these can be more specific, but that makes the parser slower
+// to generate, so I... just use hoon instead 🤷‍♀️
+// TODO Check if it benefits to make these more specific
+term { Term }
+spec { hoon }
+stud { hoon }
+chum { hoon }
+value { hoon }
+skin { hoon }
+
+// https://developers.urbit.org/reference/hoon/limbs/wing
+wing2 {
+  limb |
+  Field { limb !limb ("." limb)+ }
+}
+wing { hoon }
+// https://developers.urbit.org/reference/hoon/limbs/limb
+limb[@isGroup="Limb"] {
+  Slot { "+" int } |
+  AndSlot { "&" int } |
+  OrSlot { "|" int } |
+
+  // FastSlot { ("+" | "&" | "|") int } |
+  
+  Self { "." } |
+  Name { name } |
+  Buc { "$" } |
+  Skip { ("^" !skip)+ !skip limb } |
+  Lark {
+    ("+" | "-") 
+    (!lark (">" | "<") !lark ("+" | "-"))*
+    (">" | "<")?
+  }
+}
+
+//////////////////////////////////
+// RUNES
+// Oh so many runes...
+//////////////////////////////////
+runes_by_n[@name="Rune"] {
+  1_hoon_runes |
+  2_hoon_runes |
+  3_hoon_runes |
+  4_hoon_runes |
+  n_hoon_runes |
+  n1_hoon_runes |
+  n1_pair_runes |
+  wack_ass_runes
+}
+1_hoon_runes[@inline,@name] {
+  (
+    rune_bar<"|.", "."> |
+    rune_bar<"|-", "-"> |
+    rune_bar<"|?", "?"> |
+    rune_buc<"$_", "_"> |
+    rune_dot<".+", "+"> |
+    rune_dot<".?", "?"> |
+    rune_ket<"^|", "|"> |
+    rune_ket<"^:", ":"> |
+    rune_ket<"^&", "&"> |
+    rune_ket<"^~", "~"> |
+    rune_ket<"^*", "*"> |
+    rune_ket<"^?", "?"> |
+    rune_mic<";/", "/"> |
+    rune_sig<"~+", "+"> |
+    rune_wut<"?!", "!"> |
+    rune_zap<"!>", ">"> |
+    rune_zap<"!=", "="> |
+    rune_zap<"!:", ":"> |
+    rune_zap<"!.", ".">
+  )
+  1args<hoon>
+}
+2_hoon_runes[@inline,@name] {
+  (
+    rune_bar<"|$", "$"> |
+    rune_bar<"|:", ":"> |
+    rune_bar<"|~", "~"> |
+    rune_bar<"|*", "*"> |
+    rune_bar<"|=", "="> |
+    rune_buc<"$|", "|"> |
+    rune_buc<"$<", "<"> |
+    rune_buc<"$>", ">"> |
+    rune_buc<"$-", "-"> |
+    rune_buc<"$^", "^"> |
+    rune_buc<"$+", "+"> |
+    rune_buc<"$&", "&"> |
+    rune_buc<"$~", "~"> |
+    rune_buc<"$@", "@"> |
+    rune_buc<"$=", "="> |
+    rune_cen<"%.", "."> |
+    rune_cen<"%-", "-"> |
+    rune_col<":-", "-"> |
+    rune_col<":_", "_"> |
+    rune_dot<".*", "*"> |
+    rune_dot<".=", "="> |
+    rune_ket<"^.", "."> |
+    rune_ket<"^-", "-"> |
+    rune_ket<"^+", "+"> |
+    rune_ket<"^=", "="> |  
+    rune_mic<";;", ";"> |
+    rune_sig<"~|", "|"> |
+    rune_sig<"~$", "$"> |
+    rune_sig<"~_", "_"> |
+    rune_sig<"~/", "/"> |
+    rune_sig<"~&", "&"> |
+    rune_sig<"~=", "="> |
+    rune_sig<"~!", "!"> |
+    rune_tis<"=>", ">"> |
+    rune_tis<"=|", "|"> |
+    rune_tis<"=,", ","> |
+    rune_tis<"=-", "-"> |
+    rune_tis<"=<", "<"> |
+    rune_tis<"=+", "+"> |
+    rune_wut<"?<", "<"> |
+    rune_wut<"?>", ">"> |
+    rune_wut<"?=", "="> |
+    rune_zap<"!,", ","> |
+    rune_zap<"!<", "<"> |
+    rune_zap<"!;", ";"> |
+    rune_zap<"!?", "?">
+  )
+  2args<hoon, hoon>
+}
+3_hoon_runes[@inline,@name] {
+  (
+    rune_cen<"%+", "+"> |
+    rune_cen<"%~", "~"> |
+    // rune_col<":*", "*"> |
+    rune_sig<"~?", "?"> |
+    rune_tis<"=.", "."> |
+    rune_tis<"=;", ";"> |
+    rune_tis<"=/", "/"> |
+    rune_tis<"=*", "*"> |
+    rune_wut<"?:", ":"> |
+    rune_wut<"?.", "."> |
+    rune_wut<"?^", "^"> |
+    rune_wut<"?@", "@"> |
+    rune_wut<"?~", "~"> |
+    rune_col<":+", "+">
+  )
+  3args<hoon, hoon, hoon>
+}
+4_hoon_runes[@inline,@name] {
+  (
+    rune_cen<"%^", "^"> |
+    rune_col<":^", "^"> |
+    rune_mic<";<", "<"> |
+    rune_tis<"=^", "^"> |
+    rune_tis<"=?", "?">
+  )
+  4args<hoon, hoon, hoon, hoon>
+}
+n_hoon_runes[@inline,@name] {
+  (
+    rune_buc<"$%", "%"> |
+    rune_buc<"$:", ":"> |
+    rune_buc<"$?", "?"> |
+    rune_tis<"=~", "~"> |
+    rune_col<":~", "~"> |
+    rune_col<":*", "*"> |
+    rune_wut<"?|", "|"> |
+    rune_wut<"?&", "&">
+  )
+  nargs<hoon>
+}
+n1_hoon_runes[@inline,@name] {
+  (
+    rune_cen<"%:", ":"> |
+    rune_dot<".^", "^"> |
+    rune_mic<";:", ":"> |
+    rune_mic<";~", "~">
+  )
+  1nargs<hoon, hoon>
+}
+n1_pair_runes[@inline,@name] {
+  (
+    rune_cen<"%_", "_"> |
+    rune_cen<"%=", "="> |
+    rune_wut<"?-", "-">
+  )
+  1nargs<hoon, pair<hoon, hoon>>
+}
+// n2_hoon_runes[@name] {
+//   Centar { rune_cen<"%*", "*"> 2nargs<wing, hoon, pair<wing, hoon>> } |
+// }
+
+wack_ass_runes[@inline,@name] {
+  rune_bar<"|_", "_"> gap spec gap (lus_runes gap)* "--" |
+  rune_bar<"|%", "%"> gap (lus_runes gap)* "--" |
+  rune_bar<"|^", "^"> gap hoon gap (lus_runes gap)* "--" |
+  rune_bar<"|@", "@"> gap (lus_runes gap)*  "--" |
+  rune_sig<"~%", "%">
+    gap chum
+    gap hoon
+    gap ("~" | "==" (gap Arg { term gap hoon })* gap "==")
+    gap hoon |
+  rune_sig<"~>", ">"> 2args<Hint, hoon> |
+  rune_sig<"~<", "<"> 2args<Hint, hoon> |
+  rune_tis<"=:", ":"> (
+    gap (pair<wing, hoon> gap)* rune<"=="> gap hoon |
+    "(" comma_list<pair<wing, hoon>> ace hoon ")"
+  ) |
+  rune_cen<"%*", "*"> 2nargs<hoon, hoon, pair<hoon, hoon>> |
+  rune_wut<"?+", "+"> 2nargs<hoon, hoon, pair<hoon, hoon>> |
+  rune_zap<"!!", "!">
+}
+
+
+
+
+
+
+
+rune_bar[@name={name},group="rune"]<name, term> { "|" !rune term }
+bar_runes[@isGroup="BarRune"] {
+  Barbuc { rune_bar<"|$", "$"> 2args<term, spec> } |
+  Barcab { rune_bar<"|_", "_"> gap spec (gap lus_runes)* gap "--" } |
+  Barcol { rune_bar<"|:", ":"> 2args<hoon, hoon> } |
+  Barcen { rune_bar<"|%", "%"> (gap lus_runes)* gap "--" } |
+  Bardot { rune_bar<"|.", "."> 1args<hoon> } |
+  Barket { rune_bar<"|^", "^"> gap hoon (gap lus_runes)* gap "--" } |
+  Barhep { rune_bar<"|-", "-"> 1args<hoon> } |
+  Barhep { rune_bar<"|~", "~"> 2args<spec, hoon> } |
+  Bartar { rune_bar<"|*", "*"> 2args<spec, hoon> } |
+  Bartis { rune_bar<"|=", "="> 2args<spec, hoon> } |
+  Barpat { rune_bar<"|@", "@"> (gap lus_runes)* gap "--" } |
+  Barwut { rune_bar<"|?", "?"> 1args<hoon> }
+}
+rune_buc[@name={name},group="rune"]<name, term> { "$" !rune term }
+buc_runes[@isGroup="BucRune"] {
+  // TODO Spec/structure stuff
+  Bucbar { rune_buc<"$|", "|"> 2args<spec, hoon> } |
+  Buccap { rune_buc<"$_", "_"> 1args<hoon> } |
+  Buccen { rune_buc<"$%", "%"> nargs<spec> } | 
+  Buccol { rune_buc<"$:", ":"> nargs<spec> } |
+  Bucgal { rune_buc<"$<", "<"> 2args<spec, spec> } |
+  Bucgar { rune_buc<"$>", ">"> 2args<spec, spec> } |
+  Bughep { rune_buc<"$-", "-"> 2args<spec, spec> } |
+  Bucket { rune_buc<"$^", "^"> 2args<spec, spec> } |
+  Bucket { rune_buc<"$+", "+"> 2args<stud, spec> } |
+  Bucket { rune_buc<"$&", "&"> 2args<spec, hoon> } |
+  Bugsig { rune_buc<"$~", "~"> 2args<hoon, spec> } |
+  Bucpat { rune_buc<"$@", "@"> 2args<spec, spec> } |
+  Buctis { rune_buc<"$=", "="> 2args<skin, spec> } |
+  Bucwut { rune_buc<"$?", "?"> nargs<spec> }
+}
+rune_cen[@name={name},group="rune"]<name, term> { name }
+cen_runes[@isGroup="CenRune"] {
+  Cencab { rune_cen<"%_", "_"> 1nargs<wing, pair<wing, hoon>> } |
+  Cencol { rune_cen<"%:", ":"> 1nargs<hoon, hoon> } |
+  Cendot { rune_cen<"%.", "."> 2args<hoon, hoon> } |
+  Cenhep { rune_cen<"%-", "-"> 2args<hoon, hoon> } |
+  // Cenket { rune_cen<"%^", "^"> 4args<hoon, hoon, hoon, hoon> } |
+  Cenlus { rune_cen<"%+", "+"> 3args<hoon, hoon, hoon> } |
+  Censig { rune_cen<"%~", "~"> 3args<wing, hoon, hoon> } |
+  Centar { rune_cen<"%*", "*"> 2nargs<wing, hoon, pair<wing, hoon>> } |
+  Centis { rune_cen<"%=", "="> 1nargs<wing, pair<wing, hoon>> }
+}
+rune_col[@name={name},group="rune"]<name, term> { ":" !rune term }
+col_runes[@isGroup="ColRune"] {
+  Colhep { rune_col<":-", "-"> 2args<hoon, hoon> } |
+  Colcab { rune_col<":_", "_"> 2args<hoon, hoon> } |
+  Collus { rune_col<":+", "+"> 3args<hoon, hoon, hoon> } |
+  Colket { rune_col<":^", "^"> 4args<hoon, hoon, hoon, hoon> } |
+  Coltar { rune_col<":*", "*"> nargs<hoon> } |
+  Colsig { rune_col<":~", "~"> nargs<hoon> }
+}
+rune_dot[@name={name},group="rune"]<name, term> { "." !rune term }
+dot_runes[@isGroup="DotRune"] {
+  // TODO This one is more complex I think
+  Dotket { rune_dot<".^", "^"> 1nargs<spec, hoon> } |
+  Dotlus { rune_dot<".+", "+"> 1args<hoon> } |
+  Dottar { rune_dot<".*", "*"> 2args<hoon, hoon> } |
+  Dottis { rune_dot<".=", "="> 2args<hoon, hoon> } |
+  Dotwut { rune_dot<".?", "?"> 1args<hoon> }
+}
+rune_ket[@name={name},group="rune"]<name, term> { "^" !rune term }
+ket_runes[@isGroup="KetRune"] {
+  Ketbar { rune_ket<"^|", "|"> 1args<hoon> } |
+  Ketcol { rune_ket<"^:", ":"> 1args<spec> } |
+  Ketdot { rune_ket<"^.", "."> 2args<hoon, hoon> } |
+  Kethep { rune_ket<"^-", "-"> 2args<spec, hoon> } |
+  Ketlus { rune_ket<"^+", "+"> 2args<hoon, hoon> } |
+  Ketlus { rune_ket<"^&", "&"> 1args<hoon> } |
+  Ketsig { rune_ket<"^~", "~"> 1args<hoon> } |
+  Kettar { rune_ket<"^*", "*"> 1args<spec> } |
+  Kettis { rune_ket<"^=", "="> 2args<skin, hoon> } |  
+  Ketwut { rune_ket<"^?", "?"> 1args<hoon> }
+}
+rune_mic[@name={name},group="rune"]<name, term> { ";" !rune term }
+mic_runes[@isGroup="MicRune"] {
+  Miccol { rune_mic<";:", ":"> 1nargs<hoon, hoon> } |
+  // Micgal { rune_mic<";<", "<"> 4args<spec, hoon, hoon, hoon> } |
+  // TODO Not sure yet
+  // Miclus { rune_mic<";+", "+"> 1args<hoon> } |
+  Micmic { rune_mic<";;", ";"> 2args<spec, hoon> } |
+  Micfas { rune_mic<";/", "/"> 1args<hoon> } |
+  Micsig { rune_mic<";~", "~"> 1nargs<hoon, hoon> }
+  // TODO Not sure yet
+  // Micsig { rune_mic<";*", "*"> 1nargs<hoon, hoon> } |
+  // Mictis { rune_mic<";=", "="> nargs<hoon> } |
+}
+Hint {
+  "[" term ace hoon !idk "]" |
+  term "." hoon |
+  term
+}
+rune_sig[@name={name},group="rune"]<name, term> { "~" !rune term }
+sig_runes[@isGroup="SigRune"] {
+  Siggar { rune_sig<"~>", ">"> 2args<Hint, hoon> } |
+  Sigbar { rune_sig<"~|", "|"> 2args<hoon, hoon> } |
+  Sigbuc { rune_sig<"~$", "$"> 2args<term, hoon> } |
+  Sigcab { rune_sig<"~_", "_"> 2args<hoon, hoon> } |
+  Sigcen {
+    rune_sig<"~%", "%"> gap
+    chum gap
+    hoon gap
+    ("~" | "==" (gap Arg { term gap hoon })* "==") gap
+    hoon
+  } |
+  Siggal { rune_sig<"~<", "<"> 2args<Hint, hoon> } |
+  Siglus { rune_sig<"~+", "+"> 1args<hoon> } |
+  Sigfas { rune_sig<"~/", "/"> 2args<term, hoon> } |
+  Sigpam { rune_sig<"~&", "&"> 2args<hoon, hoon> } |
+  Sigtis { rune_sig<"~=", "="> 2args<hoon, hoon> } |
+  Sigwut { rune_sig<"~?", "?"> 3args<hoon, hoon, hoon> } |
+  Sigzap { rune_sig<"~!", "!"> 2args<hoon, hoon> }
+}
+rune_tis[@name={name},group="rune"]<name, term> { "=" !rune term }
+tis_runes[@isGroup="TisRune"] {
+  Tisgar { rune_tis<"=>", ">"> 2args<hoon, hoon> } |
+  Tisbar { rune_tis<"=|", "|"> 2args<spec, hoon> } |
+  Tiscol {
+    rune_tis<"=:", ":"> 
+    (
+      (gap pair<wing, hoon>)* gap rune<"=="> gap hoon |
+      "(" comma_list<pair<wing, hoon>> ace hoon ")"
+    )     
+  } |
+  Tiscom { rune_tis<"=,", ","> 2args<hoon, hoon> } |
+  Tisdot { rune_tis<"=.", "."> 3args<wing, hoon, hoon> } |
+  Tishep { rune_tis<"=-", "-"> 2args<hoon, hoon> } |
+  // Tisket { rune_tis<"=^", "^"> 4args<skin, wing, hoon, hoon> } |
+  Tisgal { rune_tis<"=<", "<"> 2args<hoon, hoon> } |
+  Tislus { rune_tis<"=+", "+"> 2args<hoon, hoon> } |
+  Tismic { rune_tis<"=;", ";"> 3args<skin, hoon, hoon> } |
+  Tisfas { rune_tis<"=/", "/"> 3args<skin, hoon, hoon> } |
+  Tissig { rune_tis<"=~", "~"> nargs<hoon> } |
+  Tistar { rune_tis<"=*", "*"> 3args<term, hoon, hoon> }
+  // Tiswut { rune<"=?"> 4args<wing, hoon, hoon, hoon> }
+}
+rune_wut[@name={name},group="rune"]<name, term> { "?" !rune term }
+wut_runes[@isGroup="WutRune"] {
+  Wutbar { rune_wut<"?|", "|"> nargs<hoon> } |
+  Wuthep { rune_wut<"?-", "-"> 1nargs<wing, pair<spec, value>> } |
+  Wutcol { rune_wut<"?:", ":"> 3args<hoon, hoon, hoon> } |
+  Wutdot { rune_wut<"?.", "."> 3args<hoon, hoon, hoon> } |
+  Wutdot { rune_wut<"?^", "^"> 3args<wing, hoon, hoon> } |
+  Wutgar { rune_wut<"?<", "<"> 2args<hoon, hoon> } |
+  Wutgar { rune_wut<"?>", ">"> 2args<hoon, hoon> } |
+  Wutlus { rune_wut<"?+", "+"> 2nargs<wing, hoon, pair<spec, hoon>> } |
+  Wutsig { rune_wut<"?&", "&"> nargs<hoon> } |
+  Wutpat { rune_wut<"?@", "@"> 3args<wing, hoon, hoon> } |
+  Wutsig { rune_wut<"?~", "~"> 3args<wing, hoon, hoon> } |
+  Wuttis { rune_wut<"?=", "="> 2args<spec, wing> } |
+  Wutzap { rune_wut<"?!", "!"> 1args<hoon> }
+}
+rune_zap[@name={name},group="rune"]<name, term> {
+  // "!" !rune term
+  name
+}
+zap_runes[@isGroup="ZapRune"] {
+  Zapcom { rune_zap<"!,", ","> 2args<hoon, hoon> } |
+  Zapgar { rune_zap<"!>", ">"> 1args<hoon> } |
+  Zapgal { rune_zap<"!<", "<"> 2args<spec, hoon> } |
+  Zapmic { rune_zap<"!;", ";"> 2args<hoon, hoon> } |
+  Zaptis { rune_zap<"!=", "="> 1args<hoon> } |
+  Zapwut {
+    rune_zap<"!?", "?">
+    2args<
+      Number | "[" Number ace Number "]",
+      hoon
+    >
+  } |
+  // TODO AAAarrgss
+  // Zappat {
+  //   rune_zap<"!@", "@">
+  //   (
+  //     "(" 
+  //   )
+  // } |
+
+  Zapzap { rune_zap<"!!", "!"> } |
+  Zapcol { rune_zap<"!:", ":"> 1args<hoon> } |
+  Zapdot { rune_zap<"!.", "."> 1args<hoon> }
+}
+
+rune_lus[@name={name},group="rune"]<name, term> { "+" !rune term }
+lus_runes {
+  Luslus { rune_lus<"++", "+"> gap wing gap hoon } |
+  Lusbuc { rune_lus<"+$", "$"> gap wing gap hoon } |
+  Lusbar { rune_lus<"+|", "|"> gap term } |
+  Lustar { rune_lus<"+*", "*"> (gap term gap hoon)* }
+
+  // (
+  //   rune_lus<"++", "+"> |
+  //   rune_lus<"+$", "$"> |
+  //   rune_lus<"+|", "|"> |
+  //   rune_lus<"+*", "*">
+  // )
+  // nargs<hoon>
+}
+
+
+// https://developers.urbit.org/reference/hoon/irregular
+irregular {
+  // TODO "Structure" ?
+  // Buctis { ... }
+  Cencol { "(" Gate { hoon ~f } ace list<hoon> ")" } |
+  // Buccol { "," !kettar "[" list<spec> "]" } |
+
+  // Coltar { "[" irregular_list<hoon> "]" } |
+  // Colsig {
+  //   "~" "[" irregular_list<hoon> "]" |
+  //   "[" irregular_list<hoon> "]" "~"
+  // } |
+  Coltar { op<"~">? "[" irregular_list<hoon> "]" op<"~">? } |
+
+
+  Kethep {
+    op<"`"> hoon op<"`"> !kethep (irregular | atom | wing)
+  } |
+  // TODO Or Buctis? Idk different context or something?
+  Kettis { skin !kettis op<"="> hoon } |
+  Tisgal { hoon !tisgal op<":"> hoon } |
+
+  Colhep {
+    hoon !ket op<"^"> hoon |
+    hoon !ket op<"+"> hoon |
+    hoon !ket op<"/"> hoon
+  } |
+  Ketkol { op<","> !kettar spec } |
+  Kettis { op<"="> !kettis skin } |
+  Wutzap { op<"!"> !wutzap hoon } |
+  Kettar { op<"*"> !kettar spec } |
+  Colhep { op<"`"> !backtick hoon  } |
+  Buccap { op<"_"> hoon } |
+
+  // UnaryThings {
+  //   (
+  //     "=" |
+  //     "!" |
+  //     "*" |
+  //     "`" |
+  //     "_"
+  //   )
+  //   !unary
+  //   hoon
+  // } |
+  
+  // These two battle over who should be chosen.
+  // Which is a bit hard, because they can both start with `+` (with Lark)
+  // So I use GLR here.
+  Centis {
+    wing2 ~centis-v-dotlus
+    "(" comma_list<Arg { pair<wing, hoon> }> ")"
+  } |
+  Dotlus {
+    op<"+"> ~centis-v-dotlus
+    "(" hoon ")"
+  } |
+
+  Wutbar { op<"|"> "(" list<hoon> ")" } |
+  Wutpam { op<"&"> "(" list<hoon> ")" } |
+  Miccol { op<":"> "(" list<hoon> ")" } |
+  // Conflicts with irregular Kettis, though it actually shouldn't
+  // (Irregular Kettis is technically `"=" skin` but here that is `"=" hoon`)
+  // so to resolve I add preference here
+  Dotis  { op<"="> "(" hoon ~f ace hoon !dotis ")" } |
+  Censig { op<"~"> "(" wing ace hoon ace hoon (ace hoon)* ")" } |
+  Bucwut { op<"?"> "(" list<spec> ")" } |
+  // ListHoonThing {
+  //   (
+  //     "|" |
+  //     "&" |
+  //     ":" |
+  //     "=" |
+  //     "~" |
+  //     "?"
+  //   )
+  //   "("
+  //   list<hoon>
+  //   !idk
+  //   ")"
+  // } |
+
+  // Not even a rune, just really irregular
+  Tank { op<">"> !tank list<hoon> op<"<"> } |
+  TankAsTape { op<"<"> !tank list<hoon> op<">"> }
+}
+
+
+
+/////////////////////////////////
+// ARG HELPERS
+// Because most runes are structured
+// very similar, these make life easier.
+// TODO Use these to enforce "no tall in wide form"
+// .... with a ContextTracker later.
+// NOTE I add `(ace hoon)*` to every wide form
+// .... so some exceptions (like `!=(...)`)
+// .... do still parse (even though incorrect)
+/////////////////////////////////
+1args[@name]<arg1> {
+  gap arg1 |
+  "(" arg1 (ace hoon)* ")"
+}
+2args[@name]<arg1, arg2> {
+  gap arg1 gap arg2 |
+  "(" arg1 ace arg2 (ace hoon)* ")"
+}
+3args[@name]<arg1, arg2, arg3> {
+  gap arg1 gap arg2 gap arg3 |
+  "(" arg1 ace arg2 ace arg3 (ace hoon)* ")"
+}
+4args[@name]<arg1, arg2, arg3, arg4> {
+  gap arg1 gap arg2 gap arg3 gap arg4 |
+  "(" arg1 ace arg2 ace arg3 ace arg4 (ace hoon)* ")"
+}
+1nargs[@name]<arg1, argn> {
+  gap arg1 gap (Arg { argn } gap)* rune<"=="> |
+  "(" arg1 (ace list<Arg { argn }>)? ")"
+}
+2nargs[@inline,@name]<arg1, arg2, argn> {
+  gap arg1 gap arg2 gap (Arg { argn } gap)* rune<"=="> |
+  "(" arg1 ace arg2 (ace list<Arg { argn }>)? ")"
+}
+nargs[@inline,@name]<argn> {
+  gap argn gap (argn gap)* rune<"=="> |
+  "(" list<argn> ")"
+}
+
+
+/////////////////////////////////
+// Imports that can only happen top level
+/////////////////////////////////
+ImportName[@name="Name"] { name }
+import {
+  ImportName |
+  Rename { ImportName !rename "=" ImportName } |
+  Deface { "*" ImportName }
+}
+fas_statements {
+  Faslus { rune<"/+"> gap import (!ket "," (gap | ace*) import)* } |
+  Faswut { rune<"/?"> gap atom } |
+  Fashep { rune<"/-"> gap comma_list<import> }
+}
+
+
+pair<a, b> { a (ace | gap) b }
+list<x> { x (ace x)* }
+comma_list<x> { x ("," ace x)* }
+// TODO Not sure about irregular_list...
+irregular_list<x> { (ace | gap)? x ((ace | gap) x)* (ace | gap)? }
+
+rune[@name={term},group="rune"]<term> { term }
+op[@name={term},group="operator"]<term> { term }
+
+@local tokens {
+  stringEnd[@name='"'] { '"' }
+  interpolation_start[@name="{<"] { "{<" }
+  StringEscape { "\\" _ }
+  @else stringContent
+}
+
+Interpolation {
+  interpolation_start hoon ">}"
+}
+@skip {} {
+  Tape { '"' (stringContent | Interpolation)* stringEnd }
+}
+
+// Gap needs to be like this because there can be comments inside gaps.
+gap {
+  (!gap gap_1)+
+}
+
+@tokens {
+  @precedence { gap_1 ace }
+  ace { " " }
+  gap_1 {
+    ace ace+ |
+    ace* $[\n]+ ace*
+  }
+
+  @precedence { LineComment ":" }
+  LineComment { " "? "::" ![\n]* }
+
+  // Strings
+  Cord { "'" ![\n\r']* "'" } //@t
+  Knot { "~." $[0-9a-zA-Z~_.-]* } //@ta
+  @precedence { Term "%" }
+  Term { "%" (@asciiLetter $[0-9a-zA-Z-]* | Number | Cord | Knot |"|" | "&" | "$" | "~"+ | "/" | "%"+ ) } //@tas
+
+  name { @asciiLowercase (@asciiLowercase | '-' | @digit)* }
+
+  @precedence { PlusName "+" }
+  PlusName[group="DojoName",@dialect="dojo"] { "+" name }
+  @precedence { BarName "|" }
+  BarName[group="DojoName",@dialect="dojo"] { "|" name }
+  @precedence { ColonBarName ":" }
+  ColonBarName[group="DojoName",@dialect="dojo"] { ":" name "|" name }
+  @precedence { DojoAssignName "=" }
+  DojoAssignName[group="DojoName",@dialect="dojo"] { "=" name }
+  
+  Phonemic { "~" name }
+  @precedence { Aura "@" }
+  Aura { "@" @asciiLetter+ }
+  SpecialIndex { ("&"|"+"|"|") @digit+}
+
+  SignedNumber {
+    "--" Number
+  }
+  int { @digit+ }
+  Number { 
+    @digit @digit? @digit? ("." @digit @digit @digit)* | 
+    "0x" $[0-9a-f] $[0-9a-f]? $[0-9a-f]? $[0-9a-f]? ("." $[0-9a-f] $[0-9a-f] $[0-9a-f]
+     $[0-9a-f])* |
+    "0b" $[01] $[01]? $[01]? $[01]? ("." $[01] $[01] $[01] $[01])* | 
+    "0i" @digit+ |
+    "0v" $[0-9a-v] $[0-9a-v]? $[0-9a-v]? $[0-9a-v]? $[0-9a-v]? ("." $[0-9a-v] $[0-9a-v] $[0-9a-v] 
+    $[0-9a-v] $[0-9a-v])* |
+    "0w" $[0-9a-zA-Z-~] $[0-9a-zA-Z-~]? $[0-9a-zA-Z-~]? $[0-9a-zA-Z-~]? $[0-9a-zA-Z-~]? 
+    ("." $[0-9a-zA-Z-~] $[0-9a-zA-Z-~] $[0-9a-zA-Z-~] $[0-9a-zA-Z-~] $[0-9a-zA-Z-~])*
+  }
+  
+  "--"[group="keyword"]
+  "=="[group="keyword"]
+
+  
+  Date {
+    "~"
+    (
+      $[dhms] @digit+ ("." $[dhms] @digit+)* | //day.hour.min.second
+      @digit+ "." @digit @digit? "." @digit+ //year.month.day
+    )
+  }
+
+  "[" "]"
+  "(" ")"
+  ">}" '"' "$" ","
+  "*"[group="keyword"]
+  "="[group="keyword"]
+  "+"[group="keyword"]
+  ">"[group="keyword"]
+  "<"[group="keyword"]
+  "-"[group="keyword"]
+  // "."[group="keyword"]
+  ":"[group="keyword"]
+  "^"[group="keyword"]
+  "~"[group="keyword"]
+  "!"[group="keyword"]
+  // "|"[group="keyword"]
+  "&"[group="keyword"]
+  "_"[group="keyword"]
+  "?"[group="keyword"]
+  "`"[group="keyword"]
+  
+  @precedence {
+    ColonBarName
+    LineComment
+    ace
+  }
+  
+  @precedence {
+    "%~"
+    Term
+  }
+  @precedence {
+    SignedNumber
+    "--"
+    "-"
+  }
+  @precedence {
+    Knot
+    Phonemic
+    "~"
+  }
+}
+
+@skip { LineComment }
+
+@external propSource highlight from "./highlight.js"
+
+@detectDelim
