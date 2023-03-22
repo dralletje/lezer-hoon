@@ -6,7 +6,7 @@
   cut @cut
 
   value_over_operator
-  
+
   idk
   rune
 
@@ -27,7 +27,6 @@
   rename
   limb @left
   skip
-  gap
   lark
   wutzap
 }
@@ -55,7 +54,8 @@ hoon {
   Mold |
   Aura |
   irregular |
-  wing2
+  wing_specific |
+  chum_specific
 }
 
 runes {
@@ -94,11 +94,11 @@ atom {
   Knot |
   Path |
   True { "&" } |
-  False { "|" } |
+  False { "|" }
   // TODO Names?
-  "%.y" |
-  "%.n" |
-  "%.inf"
+  // "%.y" |
+  // "%.n" |
+  // "%.inf"
 
   // _In theory_ "~" is also a value (where I now have it under Molds)
   // but because I parse basically everything as a full hoon, I'm fine with
@@ -108,11 +108,13 @@ atom {
 Path {
   (
     !path
-    "/"
+    "/"+
     (
       Name { name } |
       "[" hoon "]" |
-      Cencol { "(" list<hoon> ")" }
+      Cencol { "(" list<hoon> ")" } |
+      "%" |
+      "~"
     )
   )+
 }
@@ -123,19 +125,25 @@ Path {
 // A lot of these can be more specific, but that makes the parser slower
 // to generate, so I... just use hoon instead 🤷‍♀️
 // TODO Check if it benefits to make these more specific
-term { Term }
+term { Term | Name { name } }
+chum { hoon }
+wing { hoon }
 spec { hoon }
 stud { hoon }
-chum { hoon }
 value { hoon }
 skin { hoon }
 
+chum_specific[@name="Chum"] {
+  // TODO This can also contain something called "vendor"?
+  // .... no docs no idea 🤷‍♀️
+  Term ("." Number)
+}
+
 // https://developers.urbit.org/reference/hoon/limbs/wing
-wing2 {
+wing_specific {
   limb |
   Field { limb !limb ("." limb)+ }
 }
-wing { hoon }
 // https://developers.urbit.org/reference/hoon/limbs/limb
 limb[@isGroup="Limb"] {
   Slot { "+" int } |
@@ -146,7 +154,7 @@ limb[@isGroup="Limb"] {
   
   Self { "." } |
   Name { name } |
-  Buc { "$" } |
+  Buc { "$" !rune } |
   Skip { ("^" !skip)+ !skip limb } |
   Lark {
     ("+" | "-") 
@@ -159,7 +167,7 @@ limb[@isGroup="Limb"] {
 // RUNES
 // Oh so many runes...
 //////////////////////////////////
-runes_by_n[@name="Rune"] {
+runes_by_n[@name="Rune"] {  
   1_hoon_runes |
   2_hoon_runes |
   3_hoon_runes |
@@ -175,6 +183,10 @@ runes_by_n[@name="Rune"] {
     rune_bar<"|-", "-"> |
     rune_bar<"|?", "?"> |
     rune_buc<"$_", "_"> |
+    // Saw this rune used in arvo.hoon, and though I can't
+    // find it anywhere, Bucmic no n'existe pas!
+    // (Dojo parses it only inside `spec`)
+    rune_buc<"$;", ";"> |
     rune_dot<".+", "+"> |
     rune_dot<".?", "?"> |
     rune_ket<"^|", "|"> |
@@ -247,7 +259,12 @@ runes_by_n[@name="Rune"] {
 3_hoon_runes[@name] {
   (
     rune_cen<"%+", "+"> |
-    rune_cen<"%~", "~"> |
+
+    [@name="%~",group="rune",@dynamicPrecedence=1] {
+      @extend<Term, "%~">
+    } | 
+    // rune_cen<"%~", "~"> |
+    
     // rune_col<":*", "*"> |
     rune_sig<"~?", "?"> |
     rune_tis<"=.", "."> |
@@ -308,10 +325,10 @@ n1_pair_runes[@name] {
 // }
 
 wack_ass_runes[@name] {
-  rune_bar<"|_", "_"> gap spec gap (lus_runes gap)* "--" |
-  rune_bar<"|%", "%"> gap (lus_runes gap)* "--" |
-  rune_bar<"|^", "^"> gap hoon gap (lus_runes gap)* "--" |
-  rune_bar<"|@", "@"> gap (lus_runes gap)*  "--" |
+  rune_bar<"|_", "_"> gap spec gap lus_runes* "--" |
+  rune_bar<"|%", "%"> gap lus_runes* "--" |
+  rune_bar<"|^", "^"> gap hoon gap lus_runes* "--" |
+  rune_bar<"|@", "@"> gap lus_runes*  "--" |
   rune_sig<"~%", "%">
     gap chum
     gap hoon
@@ -337,19 +354,19 @@ wack_ass_runes[@name] {
 rune_bar[@name={name},group="rune"]<name, term> { "|" !rune term }
 bar_runes[@isGroup="BarRune"] {
   Barbuc { rune_bar<"|$", "$"> 2args<term, spec> } |
-  Barcab { rune_bar<"|_", "_"> gap spec (gap lus_runes)* gap "--" } |
+  Barcab { rune_bar<"|_", "_"> gap spec gap lus_runes* "--" } |
   Barcol { rune_bar<"|:", ":"> 2args<hoon, hoon> } |
-  Barcen { rune_bar<"|%", "%"> (gap lus_runes)* gap "--" } |
+  Barcen { rune_bar<"|%", "%"> gap lus_runes* "--" } |
   Bardot { rune_bar<"|.", "."> 1args<hoon> } |
-  Barket { rune_bar<"|^", "^"> gap hoon (gap lus_runes)* gap "--" } |
+  Barket { rune_bar<"|^", "^"> gap hoon lus_runes* "--" } |
   Barhep { rune_bar<"|-", "-"> 1args<hoon> } |
   Barhep { rune_bar<"|~", "~"> 2args<spec, hoon> } |
   Bartar { rune_bar<"|*", "*"> 2args<spec, hoon> } |
   Bartis { rune_bar<"|=", "="> 2args<spec, hoon> } |
-  Barpat { rune_bar<"|@", "@"> (gap lus_runes)* gap "--" } |
+  Barpat { rune_bar<"|@", "@"> gap lus_runes* "--" } |
   Barwut { rune_bar<"|?", "?"> 1args<hoon> }
 }
-rune_buc[@name={name},group="rune"]<name, term> { "$" !rune term }
+rune_buc[@name={name},group="rune"]<name, term> { "$" !rune ~g term }
 buc_runes[@isGroup="BucRune"] {
   // TODO Spec/structure stuff
   Bucbar { rune_buc<"$|", "|"> 2args<spec, hoon> } |
@@ -518,12 +535,14 @@ zap_runes[@isGroup="ZapRune"] {
   Zapdot { rune_zap<"!.", "."> 1args<hoon> }
 }
 
+// NOTE For lezers sake `lus_runes` can end with a `gap`.
+// .... because else lezer would run into shift/reduce conflicts 🤷‍♀️
 rune_lus[@name={name},group="rune"]<name, term> { "+" !rune term }
-lus_runes {
-  Luslus { rune_lus<"++", "+"> gap wing gap hoon } |
-  Lusbuc { rune_lus<"+$", "$"> gap wing gap hoon } |
-  Lusbar { rune_lus<"+|", "|"> gap term } |
-  Lustar { rune_lus<"+*", "*"> (gap term gap hoon)* }
+lus_runes[@name=Lus] {
+  Luslus { rune_lus<"++", "+"> gap wing gap hoon gap } |
+  Lusbuc { rune_lus<"+$", "$"> gap wing gap hoon gap } |
+  Lusbar { rune_lus<"+|", "|"> gap term gap } |
+  Lustar { rune_lus<"+*", "*"> (gap term gap hoon)+ gap }
 
   // (
   //   rune_lus<"++", "+"> |
@@ -539,7 +558,7 @@ lus_runes {
 irregular {
   // TODO "Structure" ?
   // Buctis { ... }
-  Cencol { "(" Gate { hoon ~f } ace list<hoon> ")" } |
+  Cencol { "(" Gate { hoon ~f } (ace list<hoon>)? ")" } |
   // Buccol { "," !kettar "[" list<spec> "]" } |
 
   // Coltar { "[" irregular_list<hoon> "]" } |
@@ -559,7 +578,7 @@ irregular {
 
   Colhep {
     hoon !ket op<"^"> hoon |
-    hoon !ket op<"+"> hoon |
+    hoon !rune ~g op<"+"> hoon |
     hoon !ket op<"/"> hoon
   } |
   Ketkol { op<","> !kettar spec } |
@@ -585,7 +604,7 @@ irregular {
   // Which is a bit hard, because they can both start with `+` (with Lark)
   // So I use GLR here.
   Centis {
-    wing2 ~centis-v-dotlus
+    wing_specific ~centis-v-dotlus
     "(" comma_list<Arg { pair<wing, hoon> }> ")"
   } |
   Dotlus {
@@ -691,22 +710,34 @@ op[@name={term},group="operator"]<term> { term }
 
 @local tokens {
   stringEnd[@name='"'] { '"' }
-  interpolation_start[@name="{<"] { "{<" }
+  interpolation_start { "{" }
   StringEscape { "\\" _ }
   @else stringContent
 }
 
+PrettyInterpolation {
+  [@name="{<"]{ interpolation_start !idk "<" } hoon ">}"
+}
 Interpolation {
-  interpolation_start hoon ">}"
+  [@name="{"] { interpolation_start } hoon "}"
 }
 @skip {} {
-  Tape { '"' (stringContent | Interpolation)* stringEnd }
+  Tape { '"' (stringContent | PrettyInterpolation | Interpolation)* stringEnd }
 }
 
 // Gap needs to be like this because there can be comments inside gaps.
-gap {
-  (!gap gap_1)+
+gap { gap_1+ }
+
+// Numbers can be split over multiple lines...
+// Which means it can have comments inbetween...
+// Which means I need this contraption
+Number {
+  number_start ("." gap? number_continueation)*
 }
+SignedNumber {
+  "--" Number
+}
+
 
 @tokens {
   @precedence { gap_1 ace }
@@ -722,8 +753,17 @@ gap {
   // Strings
   Cord { "'" ![\n\r']* "'" } //@t
   Knot { "~." $[0-9a-zA-Z~_.-]* } //@ta
-  @precedence { Term "%" }
-  Term { "%" (@asciiLetter $[0-9a-zA-Z-]* | Number | Cord | Knot |"|" | "&" | "$" | "~"+ | "/" | "%"+ ) } //@tas
+
+  // TODO I don't yet get all the %.XXX stuff... Some are IPs
+  // .... some are %.y and %.inf.... GRRR
+  @precedence { Term "%." "%" }
+  Term {
+    "%"
+    (
+      "."?
+      (@asciiLetter $[0-9a-zA-Z-]* | OriginalNumberToken | Cord | Knot | "|" | "&" | "$" | "~"+ | "/" | "%"+)
+    )+
+  } //@tas
 
   name { @asciiLowercase (@asciiLowercase | '-' | @digit)* }
 
@@ -741,11 +781,9 @@ gap {
   Aura { "@" @asciiLetter+ }
   SpecialIndex { ("&"|"+"|"|") @digit+}
 
-  SignedNumber {
-    "--" Number
-  }
   int { @digit+ }
-  Number { 
+  
+  OriginalNumberToken { 
     @digit @digit? @digit? ("." @digit @digit @digit)* | 
     "0x" $[0-9a-f] $[0-9a-f]? $[0-9a-f]? $[0-9a-f]? ("." $[0-9a-f] $[0-9a-f] $[0-9a-f]
      $[0-9a-f])* |
@@ -756,6 +794,18 @@ gap {
     "0w" $[0-9a-zA-Z-~] $[0-9a-zA-Z-~]? $[0-9a-zA-Z-~]? $[0-9a-zA-Z-~]? $[0-9a-zA-Z-~]? 
     ("." $[0-9a-zA-Z-~] $[0-9a-zA-Z-~] $[0-9a-zA-Z-~] $[0-9a-zA-Z-~] $[0-9a-zA-Z-~])*
   }
+  number_start { 
+    @digit @digit? @digit? | 
+    "0x" $[0-9a-f] $[0-9a-f]? $[0-9a-f]? $[0-9a-f]? |
+    "0b" $[01] $[01]? $[01]? $[01]? | 
+    "0i" @digit+ |
+    "0v" $[0-9a-v] $[0-9a-v]? $[0-9a-v]? $[0-9a-v]? $[0-9a-v]? |
+    "0w" $[0-9a-zA-Z-~] $[0-9a-zA-Z-~]? $[0-9a-zA-Z-~]? $[0-9a-zA-Z-~]? $[0-9a-zA-Z-~]? 
+  }
+  number_continueation { 
+    $[0-9a-zA-Z-~]+
+  }
+
   
   "--"[group="keyword"]
   "=="[group="keyword"]
@@ -771,7 +821,7 @@ gap {
 
   "[" "]"
   "(" ")"
-  ">}" '"' "$" ","
+  "}" ">}" '"' "$" ","
   "*"[group="keyword"]
   "="[group="keyword"]
   "+"[group="keyword"]
@@ -795,10 +845,10 @@ gap {
     ace
   }
   
-  @precedence {
-    "%~"
-    Term
-  }
+  // @precedence {
+  //   "%~"
+  //   Term
+  // }
   @precedence {
     SignedNumber
     "--"
