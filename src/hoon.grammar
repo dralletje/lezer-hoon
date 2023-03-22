@@ -169,7 +169,7 @@ runes_by_n[@name="Rune"] {
   n1_pair_runes |
   wack_ass_runes
 }
-1_hoon_runes[@inline,@name] {
+1_hoon_runes[@name] {
   (
     rune_bar<"|.", "."> |
     rune_bar<"|-", "-"> |
@@ -193,7 +193,7 @@ runes_by_n[@name="Rune"] {
   )
   1args<hoon>
 }
-2_hoon_runes[@inline,@name] {
+2_hoon_runes[@name] {
   (
     rune_bar<"|$", "$"> |
     rune_bar<"|:", ":"> |
@@ -244,7 +244,7 @@ runes_by_n[@name="Rune"] {
   )
   2args<hoon, hoon>
 }
-3_hoon_runes[@inline,@name] {
+3_hoon_runes[@name] {
   (
     rune_cen<"%+", "+"> |
     rune_cen<"%~", "~"> |
@@ -263,7 +263,7 @@ runes_by_n[@name="Rune"] {
   )
   3args<hoon, hoon, hoon>
 }
-4_hoon_runes[@inline,@name] {
+4_hoon_runes[@name] {
   (
     rune_cen<"%^", "^"> |
     rune_col<":^", "^"> |
@@ -273,7 +273,7 @@ runes_by_n[@name="Rune"] {
   )
   4args<hoon, hoon, hoon, hoon>
 }
-n_hoon_runes[@inline,@name] {
+n_hoon_runes[@name] {
   (
     rune_buc<"$%", "%"> |
     rune_buc<"$:", ":"> |
@@ -286,7 +286,7 @@ n_hoon_runes[@inline,@name] {
   )
   nargs<hoon>
 }
-n1_hoon_runes[@inline,@name] {
+n1_hoon_runes[@name] {
   (
     rune_cen<"%:", ":"> |
     rune_dot<".^", "^"> |
@@ -295,7 +295,7 @@ n1_hoon_runes[@inline,@name] {
   )
   1nargs<hoon, hoon>
 }
-n1_pair_runes[@inline,@name] {
+n1_pair_runes[@name] {
   (
     rune_cen<"%_", "_"> |
     rune_cen<"%=", "="> |
@@ -307,7 +307,7 @@ n1_pair_runes[@inline,@name] {
 //   Centar { rune_cen<"%*", "*"> 2nargs<wing, hoon, pair<wing, hoon>> } |
 // }
 
-wack_ass_runes[@inline,@name] {
+wack_ass_runes[@name] {
   rune_bar<"|_", "_"> gap spec gap (lus_runes gap)* "--" |
   rune_bar<"|%", "%"> gap (lus_runes gap)* "--" |
   rune_bar<"|^", "^"> gap hoon gap (lus_runes gap)* "--" |
@@ -654,11 +654,11 @@ irregular {
   gap arg1 gap (Arg { argn } gap)* rune<"=="> |
   "(" arg1 (ace list<Arg { argn }>)? ")"
 }
-2nargs[@inline,@name]<arg1, arg2, argn> {
+2nargs[@name]<arg1, arg2, argn> {
   gap arg1 gap arg2 gap (Arg { argn } gap)* rune<"=="> |
   "(" arg1 ace arg2 (ace list<Arg { argn }>)? ")"
 }
-nargs[@inline,@name]<argn> {
+nargs[@name]<argn> {
   gap argn gap (argn gap)* rune<"=="> |
   "(" list<argn> ")"
 }
